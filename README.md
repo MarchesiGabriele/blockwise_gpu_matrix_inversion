@@ -1,2 +1,3 @@
-# blockwise_gpu_matrix_inversion
-Fast GPU matrix inversion using PyopenCL and blockwise method
+## GOAL 
+- Beat Numpy and Matlab in matrix iversion.
+- Write guide to be able to use this inside matlab. 
