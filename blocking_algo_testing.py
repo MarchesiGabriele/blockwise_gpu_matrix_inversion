@@ -11,15 +11,13 @@ N = 5
 # (A_BDC) need to be invertible. If it is, then (D-CAB) is also invertible
 
 
-
-def block():
-    # Matrice iniziale
-    P = np.random.randint(N, size=(N,N))
-
-    print(P, "\n")
-
+def block(P):
     p_cols = np.shape(P)[1]
     p_rows = np.shape(P)[0]
+
+    # Controllo che la matrice input sia quadrata e che sia almeno grande 2x2
+    if p_cols != p_rows or p_cols == 0 or p_cols == 1:
+        return
 
     i = 1
     while(True):
@@ -30,14 +28,25 @@ def block():
         if np.shape(A)[0] == np.shape(C)[1] and np.shape(B)[1] == np.shape(D)[0] and i != 1: 
             break
         i += 1 
+    return A, B, C, D, P
 
-    print(A)
-    print(B)
-    print(C)
-    print(D)
+def inversa(P):
+    a, b, c, d, p = block(P)
+
+
+
+    print(a)
+    print(b)
+    print(c)
+    print(d)
 
 
 
 if __name__ == "__main__":
-    block()
+    # Matrice iniziale
+    P = np.random.randint(N, size=(N,N))
+    print(P, "\n")
+
+    print(inversa(P))
+
 
