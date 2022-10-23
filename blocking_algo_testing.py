@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.linalg import inv
 
 N = 5 
 
@@ -28,17 +29,30 @@ def block(P):
         if np.shape(A)[0] == np.shape(C)[1] and np.shape(B)[1] == np.shape(D)[0] and i != 1: 
             break
         i += 1 
-    return A, B, C, D, P
+    return A, B, C, D
 
+
+# Calcolo dell'inversa
 def inversa(P):
-    a, b, c, d, p = block(P)
+    a, b, c, d = block(P)
 
+    identity_matrix_a = np.eye(np.shape(b)[0], np.shape(b)[0])
+    identity_matrix_d = np.eye(np.shape(b)[1], np.shape(b)[1])
 
+    zero_matrix_b = np.zeros(np.shape(b))
+    zero_matrix_c = np.zeros(np.shape(c))
+
+    new_a = inv(a-b@inv(d)@c)
+    new_d = inv(d-c@inv(a)@b)
+    new_b = -b@inv(d)
+    new_c = -c@inv(a)
 
     print(a)
     print(b)
     print(c)
     print(d)
+
+    return np.block([[new_a, zero_matrix_b], [zero_matrix_c, new_d]])@np.block([[identity_matrix_a, new_b], [new_c, identity_matrix_d]])
 
 
 
@@ -48,5 +62,10 @@ if __name__ == "__main__":
     print(P, "\n")
 
     print(inversa(P))
+
+    print("Vera Inversa: \n", inv(P))
+
+
+
 
 
