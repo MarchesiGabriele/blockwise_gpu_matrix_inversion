@@ -1,8 +1,9 @@
 import numpy as np
 from numpy.linalg import inv
 
-N = 5 
+# TODO: Sostituire le moltiplicazioni tra matrici con moltiplicazioni eseguite sulla GPU
 
+N = 1000 
 
 # A and D need to be square and invertible
 
@@ -34,6 +35,9 @@ def block(P):
 
 # Calcolo dell'inversa
 def inversa(P):
+    if np.shape(P)[0] < 10:
+        return inv(P)
+
     a, b, c, d = block(P)
 
     identity_matrix_a = np.eye(np.shape(b)[0], np.shape(b)[0])
@@ -42,15 +46,13 @@ def inversa(P):
     zero_matrix_b = np.zeros(np.shape(b))
     zero_matrix_c = np.zeros(np.shape(c))
 
-    new_a = inv(a-b@inv(d)@c)
-    new_d = inv(d-c@inv(a)@b)
-    new_b = -b@inv(d)
-    new_c = -c@inv(a)
+    inversa_a = inversa(a)
+    inversa_d = inversa(d)
 
-    print(a)
-    print(b)
-    print(c)
-    print(d)
+    new_a = inv(a-b@inversa_d@c)
+    new_d = inv(d-c@inversa_a@b)
+    new_b = -b@inversa_d
+    new_c = -c@inversa_a
 
     return np.block([[new_a, zero_matrix_b], [zero_matrix_c, new_d]])@np.block([[identity_matrix_a, new_b], [new_c, identity_matrix_d]])
 
@@ -59,11 +61,17 @@ def inversa(P):
 if __name__ == "__main__":
     # Matrice iniziale
     P = np.random.randint(N, size=(N,N))
-    print(P, "\n")
+    #print(P, "\n")
 
-    print(inversa(P))
+    inversa = inversa(P)
 
-    print("Vera Inversa: \n", inv(P))
+    res = inversa@P
+
+    frobenius_norm = np.sqrt(np.sum(res*res))
+
+    print(f"Errore: {np.sqrt(N)-frobenius_norm}")
+    #print(inversa(P))
+    #print("Vera Inversa: \n", inv(P))
 
 
 
