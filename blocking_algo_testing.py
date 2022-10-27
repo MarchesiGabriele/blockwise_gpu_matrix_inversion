@@ -3,7 +3,7 @@ from numpy.linalg import inv
 
 # TODO: Sostituire le moltiplicazioni tra matrici con moltiplicazioni eseguite sulla GPU
 
-N = 1000 
+N = 5000 
 
 # A and D need to be square and invertible
 
@@ -35,7 +35,7 @@ def block(P):
 
 # Calcolo dell'inversa
 def inversa(P):
-    if np.shape(P)[0] < 10:
+    if np.shape(P)[0] < 1000:
         return inv(P)
 
     a, b, c, d = block(P)
