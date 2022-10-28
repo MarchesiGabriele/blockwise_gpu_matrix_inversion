@@ -1,9 +1,13 @@
 import numpy as np
 from numpy.linalg import inv
+import time
 
 # TODO: Sostituire le moltiplicazioni tra matrici con moltiplicazioni eseguite sulla GPU
 
-N = 5000 
+N = 10000
+
+LIM = 1000
+ 
 
 # A and D need to be square and invertible
 
@@ -17,9 +21,34 @@ def block(P):
     p_cols = np.shape(P)[1]
     p_rows = np.shape(P)[0]
 
+    print("blocking...")
+
     # Controllo che la matrice input sia quadrata e che sia almeno grande 2x2
     if p_cols != p_rows or p_cols == 0 or p_cols == 1:
         return
+    
+    # le matrici di ordine dispari vengono divise in 4 parti dove ordine A = (ordine P / 2) + 1 
+    idx = p_cols//2
+    # le matrici di ordine pari vengono divise in 4 parti uguali
+    #if p_cols %2 == 0:
+    A = P[0:idx, 0:idx]
+    B = P[0:idx, idx:p_cols+1]
+    C = P[idx:p_rows+1, 0:idx]
+    D = P[idx:p_rows+1, idx:p_cols+1]
+
+    """
+    print(P, "\n\n")
+    print(A,"\n")
+    print(B,"\n")
+    print(C,"\n")
+    print(D,"\n")
+    """
+
+    """
+    A = P[0:idx, 0:idx]
+    B = P[0:idx, idx+1:p_cols]
+    C = P[idx+1:p_rows, 0:idx]
+    D = P[idx+1:p_rows, idx+1:p_cols]
 
     i = 1
     while(True):
@@ -30,16 +59,20 @@ def block(P):
         if np.shape(A)[0] == np.shape(C)[1] and np.shape(B)[1] == np.shape(D)[0] and i != 1: 
             break
         i += 1 
+    """
     return A, B, C, D
 
 
 # Calcolo dell'inversa
 def inversa(P):
-    if np.shape(P)[0] < 1000:
+    if np.shape(P)[0] <= LIM:
         return inv(P)
 
     a, b, c, d = block(P)
 
+    print("backing...")
+
+    #return np.block([[new_a, zero_matrix_b], [zero_matrix_c, new_d]])@np.block([[identity_matrix_a, new_b], [new_c, identity_matrix_d]])
     identity_matrix_a = np.eye(np.shape(b)[0], np.shape(b)[0])
     identity_matrix_d = np.eye(np.shape(b)[1], np.shape(b)[1])
 
@@ -57,13 +90,16 @@ def inversa(P):
     return np.block([[new_a, zero_matrix_b], [zero_matrix_c, new_d]])@np.block([[identity_matrix_a, new_b], [new_c, identity_matrix_d]])
 
 
-
 if __name__ == "__main__":
+
     # Matrice iniziale
     P = np.random.randint(N, size=(N,N))
     #print(P, "\n")
-
+    start = time.monotonic()
     inversa = inversa(P)
+    end = time.monotonic()
+
+    print(f"Tempo: {end-start}")
 
     res = inversa@P
 
