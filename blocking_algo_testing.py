@@ -1,19 +1,11 @@
 import numpy as np
 from numpy.linalg import inv
-import time
 
-# TODO: Sostituire le moltiplicazioni tra matrici con moltiplicazioni eseguite sulla GPU
-
-N = 2000 
-
-LIM = 500 
- 
+LIM = 1000
 
 # A and D need to be square and invertible
-
 # B and C need to be conformable with A and D (BD, BDC, A-BDC, CA, CAB, D-CAB)
 # that means: b_cols == d_rows, c_cols == a_rows
-
 # (A_BDC) need to be invertible. If it is, then (D-CAB) is also invertible
 
 
@@ -53,7 +45,6 @@ def inversa(P):
 
     print("backing...")
 
-    #return np.block([[new_a, zero_matrix_b], [zero_matrix_c, new_d]])@np.block([[identity_matrix_a, new_b], [new_c, identity_matrix_d]])
     identity_matrix_a = np.eye(np.shape(b)[0], np.shape(b)[0])
     identity_matrix_d = np.eye(np.shape(b)[1], np.shape(b)[1])
 
@@ -62,40 +53,14 @@ def inversa(P):
 
     inversa_a = inversa(a)
     inversa_d = inversa(d)
-
-    new_a = inv(a-b@inversa_d@c)
-    new_d = inv(d-c@inversa_a@b)
+    
+    #TODO: usare inv() oppure inversa() ???
+    new_a = inversa(a-b@inversa_d@c)
+    new_d = inversa(d-c@inversa_a@b)
     new_b = -b@inversa_d
     new_c = -c@inversa_a
 
     return np.block([[new_a, zero_matrix_b], [zero_matrix_c, new_d]])@np.block([[identity_matrix_a, new_b], [new_c, identity_matrix_d]])
-
-
-if __name__ == "__main__":
-
-    # Matrice iniziale
-    P = np.random.randint(N, size=(N,N))
-
-    start = time.monotonic()
-    inversa = inversa(P)
-    end = time.monotonic()
-
-    print(f"Tempo: {end-start}")
-
-    start = time.monotonic()
-    res = inversa@P
-    end = time.monotonic()
-
-    print(f"Tempo: {end-start}")
-
-
-    frobenius_norm = np.sqrt(np.sum(res*res))
-
-    print(f"Errore: {np.sqrt(N)-frobenius_norm}")
-    #print(inversa(P))
-    #print("Vera Inversa: \n", inv(P))
-
-
 
 
 
