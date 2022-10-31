@@ -6,17 +6,10 @@ import sys
 
 # TODO: Sostituire le moltiplicazioni tra matrici con moltiplicazioni eseguite sulla GPU
 
-N = 4096 
+N = 1000 
 
-if __name__ == "__main__":
-
-    # Matrice iniziale
-    P = np.random.rand(N, N)
-    print("primo elemento: ", P[0][0], "\n")
-  
-    
-    # TEST OPENCL MATMUL 
-    #####################################################
+# TEST OPENCL MATMUL 
+def test_mat_mul(P):
     start = time.monotonic()
     np.dot(P,P) 
     end = time.monotonic()
@@ -27,8 +20,16 @@ if __name__ == "__main__":
     end = time.monotonic()
     print(f"Tempo OPENCL MATMUL: {end-start}s")
     sys.exit(0)
-    #####################################################
 
+
+if __name__ == "__main__":
+
+    # Matrice iniziale
+    P = np.random.rand(N, N)
+    print("primo elemento: ", P[0][0], "\n")
+    
+    test_mat_mul(P)
+    
     start = time.monotonic()
     inversa = bl.inversa(P)
     end = time.monotonic()
