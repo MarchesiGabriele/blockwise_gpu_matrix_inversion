@@ -6,9 +6,9 @@ import sys
 
 # TODO: Sostituire le moltiplicazioni tra matrici con moltiplicazioni eseguite sulla GPU
 
-N = 6000 
-FP32 =  False 
-#np.random.seed(0)
+N = 10000
+FP32 = True 
+np.random.seed(0)
 
 # TEST OPENCL MATMUL 
 def test_mat_mul():
@@ -30,7 +30,8 @@ def test_mat_mul():
     m1 = mm.matmul(A, B, N//3, N, N//2, FP32)
     end = time.monotonic()
     print(f"Tempo OPENCL MATMUL: {end-start}s")
-    print("errore numpy vs opencl: ", np.sum(np.subtract(m1, m0)))
+    print("errore medio numpy vs opencl: ", np.sum(np.subtract(m1, m0))/(N*N))
+
     sys.exit(0)
 
 
