@@ -6,20 +6,23 @@ import warnings
 os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
 os.environ['PYOPENCL_CTX'] = '0' 
 warnings.filterwarnings("ignore")
-np.random.seed(0)
 
 
 # https://cnugteren.github.io/tutorial/pages/page4.html
 #TODO: spostare creazione context fuori da questa funzione e metterlo dentro la funzione main, oppure dentro la prima chiamata della funzione inversa (per crearlo una sola volta)
 
-def matmul(matrix1, matrix2, M, K, N):
+def matmul(matrix1, matrix2, M, K, N, fp32):
 
     # OpenCL Setup
     ctx = cl.create_some_context()
     queue = cl.CommandQueue(ctx)
 
     # Buffers
-    out_matrix = np.random.rand(M,N)
+    if fp32: 
+        out_matrix = np.random.rand(M,N).astype(np.float32)
+    else:
+        out_matrix = np.random.rand(M,N)
+
     mf = cl.mem_flags
     A = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf = matrix1)
     B = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf = matrix2)
@@ -28,20 +31,35 @@ def matmul(matrix1, matrix2, M, K, N):
     # Kernels Creation
     # NB: max local mem size: 65536 byte (for each workgroup) == 90 FP64 values
     # M = altezza matrice A, N = larghezza matrice B, K = larghezza matrice A = altezza matrice B
-    prog = cl.Program(ctx,  """
-                            #pragma OPENCL EXTENSION cl_khr_fp64 : enable(res)
-                            __kernel void matmul(__global double* A, __global double* B, __global double* C, int M, int K, int N){
-                                size_t row = get_global_id(0);
-                                size_t col = get_global_id(1);
+    if fp32:
+        prog = cl.Program(ctx,  """
+                                __kernel void matmul(__global float* A, __global float* B, __global float* C, int M, int K, int N){
+                                    size_t row = get_global_id(0);
+                                    size_t col = get_global_id(1);
 
-                                double acc = 0.0;
-                                for(int c = 0; c<K; c++){
-                                    acc += A[row*K + c] * B[col + c*N]; 
+                                    float acc = 0.0f;
+                                    for(int c = 0; c<K; c++){
+                                        acc += A[row*K + c] * B[col + c*N]; 
+                                    }
+                                    C[row*N + col] = acc;
                                 }
-                                C[row*N + col] = acc;
-                            }
-                            """).build()
+                                """).build()
+    else:
+        prog = cl.Program(ctx,  """
+                                #pragma OPENCL EXTENSION cl_khr_fp64 : enable(res)
+                                __kernel void matmul(__global double* A, __global double* B, __global double* C, int M, int K, int N){
+                                    size_t row = get_global_id(0);
+                                    size_t col = get_global_id(1);
 
+                                    double acc = 0.0;
+                                    for(int c = 0; c<K; c++){
+                                        acc += A[row*K + c] * B[col + c*N]; 
+                                    }
+                                    C[row*N + col] = acc;
+                                }
+                                """).build()
+
+        
     # Kernel Execution
     pp = prog.matmul
 
