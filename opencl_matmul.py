@@ -37,9 +37,37 @@ def matmul(matrix1, matrix2, M, K, N, fp32):
                                     size_t row = get_global_id(0);
                                     size_t col = get_global_id(1);
 
+                                    size_t loc_row = get_local_id(0);
+                                    size_t loc_col = get_local_id(1);
+
+                                    size_t loc_size = get_local_size(1);
+
+                                    __local float Asub[local_size*2];
+                                    __local float Bsub[local_size*2];
+
                                     float acc = 0.0f;
-                                    for(int c = 0; c<K; c++){
-                                        acc += A[row*K + c] * B[col + c*N]; 
+        
+                                    // calcolo numero di tiles
+                                    const int numTiles;
+                                    const int remainingTile;
+                                    const int remainingM = M%loc_size;
+                                    const int remainingN = N%loc_size;
+                                    
+                                    // Controllo se le tiles coprono tutte le matrici o no 
+                                    if((K%local_size) == 0){
+                                        numTiles = K/local_size;
+                                    }else{
+                                        numTiles = (int)floor(K/local_size);
+                                        remainingTile = K%local_size;
+                                    }
+
+                                    for(int i = 0; i<num_tiles; i++){
+                                        Asub[loc_row*local_size + loc_col] = A[loc_col + loc_row*M + i*loc_size];
+                                        Bsub[loc_row*local_size + loc_col] = A[loc_col + loc_row*M + i*loc_size];
+                                        
+                                        for(int c = 0; c<K; c++){
+                                            acc += A[row*K + c] * B[col + c*N]; 
+                                        }
                                     }
                                     C[row*N + col] = acc;
                                 }
@@ -64,7 +92,7 @@ def matmul(matrix1, matrix2, M, K, N, fp32):
     pp = prog.matmul
 
     pp.set_args(A, B, C, np.int32(M), np.int32(K), np.int32(N))
-    res = cl.enqueue_nd_range_kernel(queue, pp, [M, N], None, None)  # queue, kernel, global dims, local dims, offset
+    res = cl.enqueue_nd_range_kernel(queue, pp, [M, N], [3, 3], None)  # queue, kernel, global dims, local dims, offset
     queue.finish()
 
     
