@@ -40,36 +40,59 @@ def matmul(matrix1, matrix2, M, K, N, fp32):
                                     size_t loc_row = get_local_id(0);
                                     size_t loc_col = get_local_id(1);
 
-                                    size_t loc_size = get_local_size(1);
+                                    int local_size = get_local_size(1);
 
-                                    __local float Asub[local_size*2];
-                                    __local float Bsub[local_size*2];
+                                    int globalRow = local_size*get_group_id(0) + loc_row; 
+                                    int globalCol = local_size*get_group_id(1) + loc_col; 
+
+
+                                    __local float Asub[9];
+                                    __local float Bsub[9];
 
                                     float acc = 0.0f;
         
                                     // calcolo numero di tiles
-                                    const int numTiles;
-                                    const int remainingTile;
-                                    const int remainingM = M%loc_size;
-                                    const int remainingN = N%loc_size;
+                                    int numTiles;
+                                    int remainingTile;
+                                    const int remainingM = M%local_size;
+                                    const int remainingN = N%local_size;
                                     
                                     // Controllo se le tiles coprono tutte le matrici o no 
                                     if((K%local_size) == 0){
                                         numTiles = K/local_size;
                                     }else{
-                                        numTiles = (int)floor(K/local_size);
+                                        numTiles = (int)floor((float)K/local_size);
                                         remainingTile = K%local_size;
                                     }
 
-                                    for(int i = 0; i<num_tiles; i++){
-                                        Asub[loc_row*local_size + loc_col] = A[loc_col + loc_row*M + i*loc_size];
-                                        Bsub[loc_row*local_size + loc_col] = A[loc_col + loc_row*M + i*loc_size];
+                                    for(int i = 0; i<numTiles; i++){
+                                        //printf("Global: %i %i        Local: %i %i       value: %f ", globalRow, globalCol, loc_row, loc_col, A[loc_col*M + globalRow + i*local_size*M]);
+
+                                        //Asub[loc_row*local_size + loc_col] = A[globalCol*K + loc_row + i*local_size];
+                                        //Bsub[loc_row*local_size + loc_col] = B[loc_col*M + globalRow + i*local_size*M];
+    
+                                        Asub[loc_row*local_size + loc_col] = A[globalRow*K + loc_col + i*local_size];
+                                        Bsub[loc_row*local_size + loc_col] = B[loc_row*N + globalCol + i*local_size*N];
+
+                                        barrier(CLK_LOCAL_MEM_FENCE);
                                         
-                                        for(int c = 0; c<K; c++){
-                                            acc += A[row*K + c] * B[col + c*N]; 
+                                        // TEST LETTURA
+                                        if(row == 1 && col == 1){
+                                            for(int ss = 0; ss<local_size*local_size; ss++){
+                                                printf("%f %i", Bsub[ss], i);
+                                            }
+                                            printf("stop");
+                                        } 
+ 
+
+                                        for(int c = 0; c<local_size; c++){
+                                            acc += Asub[c + loc_col*local_size] * Bsub[c*local_size + loc_row];
+                                            //printf("%f %f", Asub[c + loc_row*local_size], Bsub[c*local_size + loc_col]);
                                         }
+
+                                        barrier(CLK_LOCAL_MEM_FENCE);
                                     }
-                                    C[row*N + col] = acc;
+                                    C[globalCol*N + globalRow] = acc;
                                 }
                                 """).build()
     else:
