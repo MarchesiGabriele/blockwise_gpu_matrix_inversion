@@ -2,6 +2,7 @@ import pyopencl as cl
 import numpy as np
 import os
 import warnings
+import time
 
 os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
 os.environ['PYOPENCL_CTX'] = '0' 
@@ -20,15 +21,20 @@ def matmul(matrix1, matrix2, M, K, N, fp32):
     queue = cl.CommandQueue(ctx)
 
     # Buffers
+    start = time.monotonic()
     if fp32: 
         out_matrix = np.random.rand(M,N).astype(np.float32)
+
     else:
         out_matrix = np.random.rand(M,N)
+    end = time.monotonic()
+
+    print(f"Tempo creazione matrice: {end-start}")
 
     mf = cl.mem_flags
-    A = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf = matrix1)
-    B = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf = matrix2)
-    C = cl.Buffer(ctx, mf.READ_WRITE | mf.COPY_HOST_PTR, hostbuf = out_matrix)
+    A = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf = matrix1)
+    B = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf = matrix2)
+    C = cl.Buffer(ctx, mf.WRITE_ONLY | mf.COPY_HOST_PTR, hostbuf = out_matrix)
 
     # Kernels Creation
     # NB: max local mem size: 65536 byte (for each workgroup) == 90 FP64 values
@@ -83,19 +89,15 @@ def matmul(matrix1, matrix2, M, K, N, fp32):
                                             }
                                             printf("stop");
                                         } */
- 
-                                        if(i != numTiles-1 || remainingTile == 0){
-                                            for(int c = 0; c<local_size; c++){
-                                                // Il prodotto tra B' e A' permette di avere il risultato con gli index nella posizione corretta 
-                                                acc += Bsub[c + loc_col*local_size] * Asub[c*local_size + loc_row];
-                                                //printf("%f %f", Asub[c + loc_col*local_size] , Bsub[c*local_size + loc_row]);
-                                            }
-                                        }
-                                        else{
-                                            for(int c = 0; c<remainingTile; c++){
-                                                acc += Bsub[c + loc_col*local_size] * Asub[c*local_size + loc_row];
-                                            }
 
+                                        int iterazioni = remainingTile;
+                                        if(i != numTiles-1 || remainingTile == 0)
+                                            iterazioni = local_size;
+ 
+                                        for(int c = 0; c<iterazioni; c++){
+                                            // Il prodotto tra B' e A' permette di avere il risultato con gli index nella posizione corretta 
+                                            acc += Bsub[c + loc_col*local_size] * Asub[c*local_size + loc_row];
+                                            //printf("%f %f", Asub[c + loc_col*local_size] , Bsub[c*local_size + loc_row]);
                                         }
 
                                         barrier(CLK_LOCAL_MEM_FENCE);
