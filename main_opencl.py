@@ -6,7 +6,7 @@ import sys
 
 # TODO: Sostituire le moltiplicazioni tra matrici con moltiplicazioni eseguite sulla GPU
 
-N = 6 
+N = 131 
 FP32 = True 
 np.random.seed(0)
 
@@ -15,8 +15,8 @@ def test_mat_mul():
     if FP32:
         A = np.random.rand(N//3, N).astype(np.float32)
         B = np.random.rand(N, N//2).astype(np.float32)
-        A = np.random.rand(N, N).astype(np.float32)
-        B = np.random.rand(N, N).astype(np.float32)
+        A = np.random.rand(6, N).astype(np.float32)
+        B = np.random.rand(N, 6).astype(np.float32)
     else:
         A = np.random.rand(N//3, N)
         B = np.random.rand(N, N//2)
@@ -36,7 +36,7 @@ def test_mat_mul():
     #opencl
     start = time.monotonic()
     #m1 = mm.matmul(A, B, N//3, N, N//2, FP32)
-    m1 = mm.matmul(A, B, N, N, N, FP32)
+    m1 = mm.matmul(A, B, 6, N, 6, FP32)
     print("NUMP")
     print(m0)
     print()

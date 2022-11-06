@@ -54,41 +54,46 @@ def matmul(matrix1, matrix2, M, K, N, fp32):
                                     // calcolo numero di tiles
                                     int numTiles;
                                     int remainingTile;
-                                    const int remainingM = M%local_size;
-                                    const int remainingN = N%local_size;
                                     
                                     // Controllo se le tiles coprono tutte le matrici o no 
                                     if((K%local_size) == 0){
                                         numTiles = K/local_size;
+                                        remainingTile = 0;
                                     }else{
-                                        numTiles = (int)floor((float)K/local_size);
+                                        numTiles = (int)ceil((float)K/local_size);
                                         remainingTile = K%local_size;
                                     }
 
+                                    if(col == 0 && row == 0) 
+                                        printf("numtiles: %i, remTiles: %i", numTiles, remainingTile);
+
                                     for(int i = 0; i<numTiles; i++){
                                         //printf("Global: %i %i        Local: %i %i       value: %f ", globalRow, globalCol, loc_row, loc_col, A[loc_col*M + globalRow + i*local_size*M]);
-
-
-                                        // WORKS 
+                                        // Asub e Bsub sono le trasposte rispetto ai valori nella matrice iniziale 
                                         Asub[loc_col*local_size + loc_row] = A[globalRow*K + loc_col + i*local_size];
                                         Bsub[loc_col*local_size + loc_row] = B[loc_row*N + globalCol + i*local_size*N];
 
-
-
                                         barrier(CLK_LOCAL_MEM_FENCE);
                                         
-                                        // TEST LETTURA
-                                        if(row == 1 && col == 1){
+                                        /*if(row == 1 && col == 1){
                                             for(int ss = 0; ss<local_size*local_size; ss++){
                                                 printf("%f %i", Asub[ss], i);
                                             }
                                             printf("stop");
-                                        } 
+                                        } */
  
+                                        if(i != numTiles-1 || remainingTile == 0){
+                                            for(int c = 0; c<local_size; c++){
+                                                // Il prodotto tra B' e A' permette di avere il risultato con gli index nella posizione corretta 
+                                                acc += Bsub[c + loc_col*local_size] * Asub[c*local_size + loc_row];
+                                                //printf("%f %f", Asub[c + loc_col*local_size] , Bsub[c*local_size + loc_row]);
+                                            }
+                                        }
+                                        else{
+                                            for(int c = 0; c<remainingTile; c++){
+                                                acc += Bsub[c + loc_col*local_size] * Asub[c*local_size + loc_row];
+                                            }
 
-                                        for(int c = 0; c<local_size; c++){
-                                            acc += Bsub[c + loc_col*local_size] * Asub[c*local_size + loc_row];
-                                            //printf("%f %f", Asub[c + loc_col*local_size] , Bsub[c*local_size + loc_row]);
                                         }
 
                                         barrier(CLK_LOCAL_MEM_FENCE);
