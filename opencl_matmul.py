@@ -50,20 +50,15 @@ def matmul(matrix1, matrix2, M, K, N, fp32):
 
                                     int local_size = get_local_size(1);
 
-                                    int globalRow = local_size*get_group_id(0) + loc_row; 
-                                    int globalCol = local_size*get_group_id(1) + loc_col; 
-
-
                                     __local float Asub[256];
                                     __local float Bsub[256];
 
                                     float acc = 0.0f;
         
-                                    // calcolo numero di tiles
                                     int numTiles;
                                     int remainingTile;
                                     
-                                    // Controllo se le tiles coprono tutte le matrici o no 
+                                    // calcolo numero di tiles (rispetto alla dimensione K)
                                     if((K%local_size) == 0){
                                         numTiles = K/local_size;
                                         remainingTile = 0;
@@ -76,20 +71,12 @@ def matmul(matrix1, matrix2, M, K, N, fp32):
                                         printf("numtiles: %i, remTiles: %i", numTiles, remainingTile);
 
                                     for(int i = 0; i<numTiles; i++){
-                                        //printf("Global: %i %i        Local: %i %i       value: %f ", globalRow, globalCol, loc_row, loc_col, A[loc_col*M + globalRow + i*local_size*M]);
                                         // Asub e Bsub sono le trasposte rispetto ai valori nella matrice iniziale 
-                                        Asub[loc_col*local_size + loc_row] = A[globalRow*K + loc_col + i*local_size];
-                                        Bsub[loc_col*local_size + loc_row] = B[loc_row*N + globalCol + i*local_size*N];
+                                        Asub[loc_col*local_size + loc_row] = A[row*K + loc_col + i*local_size];
+                                        Bsub[loc_col*local_size + loc_row] = B[loc_row*N + col+ i*local_size*N];
 
                                         barrier(CLK_LOCAL_MEM_FENCE);
                                         
-                                        /*if(row == 3 && col == 3){
-                                            for(int ss = 0; ss<local_size*local_size; ss++){
-                                                printf("%f %i", Asub[ss], i);
-                                            }
-                                            printf("stop");
-                                        } */
-
                                         int iterazioni = remainingTile;
                                         if(i != numTiles-1 || remainingTile == 0)
                                             iterazioni = local_size;
@@ -97,15 +84,13 @@ def matmul(matrix1, matrix2, M, K, N, fp32):
                                         for(int c = 0; c<iterazioni; c++){
                                             // Il prodotto tra B' e A' permette di avere il risultato con gli index nella posizione corretta 
                                             acc += Bsub[c + loc_col*local_size] * Asub[c*local_size + loc_row];
-                                            //printf("%f %f", Asub[c + loc_col*local_size] , Bsub[c*local_size + loc_row]);
                                         }
 
                                         barrier(CLK_LOCAL_MEM_FENCE);
                                     }
             
-                                    //printf("%f     row %i, col %i", acc, globalRow, globalCol);
-                                    if(globalRow < M && globalCol < N){
-                                        C[globalRow*N + globalCol] = acc;
+                                    if(row< M && col< N){
+                                        C[row*N + col] = acc;
                                     }
                                 }
                                 """).build()

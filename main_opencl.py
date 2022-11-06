@@ -6,7 +6,7 @@ import sys
 
 # TODO: Sostituire le moltiplicazioni tra matrici con moltiplicazioni eseguite sulla GPU
 
-N = 4101
+N = 4096 
 
 FP32 = True 
 np.random.seed(0)
