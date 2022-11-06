@@ -54,6 +54,8 @@ def matmul(matrix1, matrix2, M, K, N, fp32):
                                     // calcolo numero di tiles
                                     int numTiles;
                                     int remainingTile;
+                                    const int remN = N%local_size;
+                                    const int remM = M%local_size;
                                     
                                     // Controllo se le tiles coprono tutte le matrici o no 
                                     if((K%local_size) == 0){
