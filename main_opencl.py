@@ -37,9 +37,12 @@ def test_mat_mul():
     start = time.monotonic()
     #m1 = mm.matmul(A, B, N//3, N, N//2, FP32)
     m1 = mm.matmul(A, B, N, N, N, FP32)
-
+    print("NUMP")
     print(m0)
     print()
+#    print(np.matrix.transpose(m1))
+
+    print("OPEN")
     print(m1)
     end = time.monotonic()
     print(f"Tempo OPENCL MATMUL: {end-start}s")

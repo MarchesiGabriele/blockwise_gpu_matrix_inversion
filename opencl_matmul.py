@@ -68,31 +68,34 @@ def matmul(matrix1, matrix2, M, K, N, fp32):
                                     for(int i = 0; i<numTiles; i++){
                                         //printf("Global: %i %i        Local: %i %i       value: %f ", globalRow, globalCol, loc_row, loc_col, A[loc_col*M + globalRow + i*local_size*M]);
 
-                                        //Asub[loc_row*local_size + loc_col] = A[globalCol*K + loc_row + i*local_size];
-                                        //Bsub[loc_row*local_size + loc_col] = B[loc_col*M + globalRow + i*local_size*M];
-    
-                                        Asub[loc_row*local_size + loc_col] = A[globalRow*K + loc_col + i*local_size];
-                                        Bsub[loc_row*local_size + loc_col] = B[loc_row*N + globalCol + i*local_size*N];
+
+                                        // WORKS 
+                                        Asub[loc_col*local_size + loc_row] = A[globalRow*K + loc_col + i*local_size];
+                                        Bsub[loc_col*local_size + loc_row] = B[loc_row*N + globalCol + i*local_size*N];
+
+
 
                                         barrier(CLK_LOCAL_MEM_FENCE);
                                         
                                         // TEST LETTURA
                                         if(row == 1 && col == 1){
                                             for(int ss = 0; ss<local_size*local_size; ss++){
-                                                printf("%f %i", Bsub[ss], i);
+                                                printf("%f %i", Asub[ss], i);
                                             }
                                             printf("stop");
                                         } 
  
 
                                         for(int c = 0; c<local_size; c++){
-                                            acc += Asub[c + loc_col*local_size] * Bsub[c*local_size + loc_row];
-                                            //printf("%f %f", Asub[c + loc_row*local_size], Bsub[c*local_size + loc_col]);
+                                            acc += Bsub[c + loc_col*local_size] * Asub[c*local_size + loc_row];
+                                            //printf("%f %f", Asub[c + loc_col*local_size] , Bsub[c*local_size + loc_row]);
                                         }
 
                                         barrier(CLK_LOCAL_MEM_FENCE);
                                     }
-                                    C[globalCol*N + globalRow] = acc;
+            
+                                    //printf("%f     row %i, col %i", acc, globalRow, globalCol);
+                                    C[globalRow*N + globalCol] = acc;
                                 }
                                 """).build()
     else:
