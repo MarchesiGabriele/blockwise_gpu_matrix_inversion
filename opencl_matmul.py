@@ -7,6 +7,8 @@ os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
 os.environ['PYOPENCL_CTX'] = '0' 
 warnings.filterwarnings("ignore")
 
+DIM = 16 
+
 
 # https://cnugteren.github.io/tutorial/pages/page4.html
 #TODO: spostare creazione context fuori da questa funzione e metterlo dentro la funzione main, oppure dentro la prima chiamata della funzione inversa (per crearlo una sola volta)
@@ -46,16 +48,14 @@ def matmul(matrix1, matrix2, M, K, N, fp32):
                                     int globalCol = local_size*get_group_id(1) + loc_col; 
 
 
-                                    __local float Asub[9];
-                                    __local float Bsub[9];
+                                    __local float Asub[256];
+                                    __local float Bsub[256];
 
                                     float acc = 0.0f;
         
                                     // calcolo numero di tiles
                                     int numTiles;
                                     int remainingTile;
-                                    const int remN = N%local_size;
-                                    const int remM = M%local_size;
                                     
                                     // Controllo se le tiles coprono tutte le matrici o no 
                                     if((K%local_size) == 0){
@@ -77,7 +77,7 @@ def matmul(matrix1, matrix2, M, K, N, fp32):
 
                                         barrier(CLK_LOCAL_MEM_FENCE);
                                         
-                                        /*if(row == 1 && col == 1){
+                                        /*if(row == 3 && col == 3){
                                             for(int ss = 0; ss<local_size*local_size; ss++){
                                                 printf("%f %i", Asub[ss], i);
                                             }
@@ -102,7 +102,9 @@ def matmul(matrix1, matrix2, M, K, N, fp32):
                                     }
             
                                     //printf("%f     row %i, col %i", acc, globalRow, globalCol);
-                                    C[globalRow*N + globalCol] = acc;
+                                    if(globalRow < M && globalCol < N){
+                                        C[globalRow*N + globalCol] = acc;
+                                    }
                                 }
                                 """).build()
     else:
@@ -124,8 +126,11 @@ def matmul(matrix1, matrix2, M, K, N, fp32):
     # Kernel Execution
     pp = prog.matmul
 
+    offset_M = M + (M%DIM)
+    offset_N = N + (N%DIM)
+
     pp.set_args(A, B, C, np.int32(M), np.int32(K), np.int32(N))
-    res = cl.enqueue_nd_range_kernel(queue, pp, [M, N], [3, 3], None)  # queue, kernel, global dims, local dims, offset
+    res = cl.enqueue_nd_range_kernel(queue, pp, [M+offset_M, N+offset_N], [DIM, DIM], None)  # queue, kernel, global dims, local dims, offset
     queue.finish()
 
     
