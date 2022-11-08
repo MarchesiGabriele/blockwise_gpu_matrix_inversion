@@ -3,6 +3,7 @@ import numpy as np
 import time
 import opencl_matmul as mm
 import sys
+import pyopencl as cl
 
 # TODO: Sostituire le moltiplicazioni tra matrici con moltiplicazioni eseguite sulla GPU
 
@@ -30,8 +31,10 @@ def test_mat_mul():
     print(f"NUMPY FLOPS: {(N*N*2*N)/(end-start)*1e-9} GFLOPS")
     
     #opencl
+    ctx = cl.create_some_context()
+    queue = cl.CommandQueue(ctx)
     start = time.monotonic()
-    m1 = mm.matmul(A, B, N//3, N, N//2, FP32)
+    m1 = mm.matmul(A, B, N//3, N, N//2, FP32, ctx, queue)
     end = time.monotonic()
     #print(m0)
     print()

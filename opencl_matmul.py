@@ -10,15 +10,14 @@ warnings.filterwarnings("ignore")
 
 DIM = 16 
 
-
 # https://cnugteren.github.io/tutorial/pages/page4.html
 #TODO: spostare creazione context fuori da questa funzione e metterlo dentro la funzione main, oppure dentro la prima chiamata della funzione inversa (per crearlo una sola volta)
 
-def matmul(matrix1, matrix2, M, K, N, fp32):
+def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
 
     # OpenCL Setup
-    ctx = cl.create_some_context()
-    queue = cl.CommandQueue(ctx)
+    #ctx = cl.create_some_context()
+    #queue = cl.CommandQueue(ctx)
 
     # Buffers
     start = time.monotonic()
@@ -70,7 +69,7 @@ def matmul(matrix1, matrix2, M, K, N, fp32):
                                     for(int i = 0; i<numTiles; i++){
                                         // Asub e Bsub sono le trasposte rispetto ai valori nella matrice iniziale 
                                         Asub[loc_col*local_size + loc_row] = A[row*K + loc_col + i*local_size];
-                                        Bsub[loc_col*local_size + loc_row] = B[loc_row*N + col+ i*local_size*N];
+                                        Bsub[loc_col*local_size + loc_row] = B[loc_row*N + col + i*local_size*N];
 
                                         barrier(CLK_LOCAL_MEM_FENCE);
                                         
