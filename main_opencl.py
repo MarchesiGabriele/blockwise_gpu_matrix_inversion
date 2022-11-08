@@ -27,18 +27,18 @@ def test_mat_mul():
     m0 = np.dot(A,B) 
     end = time.monotonic()
     print(f"Tempo NUMPY MATMUL: {end-start}s")
+    print(f"NUMPY FLOPS: {(N*N*2*N)/(end-start)*1e-9} GFLOPS")
     
     #opencl
     start = time.monotonic()
     m1 = mm.matmul(A, B, N//3, N, N//2, FP32)
     end = time.monotonic()
-    print("NUMP")
-    print(m0)
+    #print(m0)
     print()
 
-    print("OPEN")
-    print(m1)
+    #print(m1)
     print(f"Tempo OPENCL MATMUL: {end-start}s")
+    print(f"OPENCL FLOPS: {(N*N*2*N)/(end-start)*1e-9} GFLOPS")
     print("errore medio numpy vs opencl: ", np.sum(np.subtract(m1, m0))/(N*N))
 
     sys.exit(0)
@@ -48,7 +48,6 @@ if __name__ == "__main__":
 
     # Matrice iniziale
     P = np.random.rand(N, N)
-    print("primo elemento: ", P[0][0], "\n")
 
     test_mat_mul()
     

@@ -29,7 +29,7 @@ def matmul(matrix1, matrix2, M, K, N, fp32):
         out_matrix = np.random.rand(M,N)
     end = time.monotonic()
 
-    print(f"Tempo creazione matrice: {end-start}")
+    #print(f"Tempo creazione matrice: {end-start}")
 
     mf = cl.mem_flags
     A = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf = matrix1)
@@ -66,9 +66,6 @@ def matmul(matrix1, matrix2, M, K, N, fp32):
                                         numTiles = (int)ceil((float)K/local_size);
                                         remainingTile = K%local_size;
                                     }
-
-                                    if(col == 0 && row == 0) 
-                                        printf("numtiles: %i, remTiles: %i", numTiles, remainingTile);
 
                                     for(int i = 0; i<numTiles; i++){
                                         // Asub e Bsub sono le trasposte rispetto ai valori nella matrice iniziale 
