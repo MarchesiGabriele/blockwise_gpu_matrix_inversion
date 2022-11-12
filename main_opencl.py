@@ -9,10 +9,10 @@ import os
 
 #os.environ['OMP_NUM_THREADS'] = '1'
 
-N = 4096 
+N = 2048 
 
-N1 = N//2
-N2 = N//3
+N1 = N
+N2 = N
 
 FP32 = True 
 #np.random.seed(0)
