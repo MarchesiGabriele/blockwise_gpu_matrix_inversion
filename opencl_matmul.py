@@ -41,20 +41,41 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
 
     # 2048x2048 benchmarks
     # BASIC = 100-110 GFLOPS
+    # SQUARE TILING N MULTIPLE OF DIM =  157 GFLOPS
     # SQUARE TILING =  
     # RECTANGLE TILING = 
     if fp32:
         prog = cl.Program(ctx,  """
-                            __kernel void matmul(__global float* A, __global float* B, __global float* C, int N){
-                                size_t i = get_global_id(1);
-                                size_t j = get_global_id(0);
-                                
+                            __kernel void matmul(__global float* A, __global float* B, __global float* C, int M, int K, int N){
+                                size_t row = get_global_id(0);
+                                size_t col = get_global_id(1);
+
+                                size_t loc_row = get_local_id(0);
+                                size_t loc_col = get_local_id(1);
+
+                                int local_size = get_local_size(1);
+
+                                __local float Asub[256];
+                                __local float Bsub[256];
+
                                 float acc = 0.0f;
-                                for(int c = 0; c<N; c++){
-                                    acc += A[i*N + c] * B[j + c*N]; 
+
+                                const short numTiles = K/local_size;
+    
+                                for(int i = 0; i<numTiles; i++){
+                                    Asub[loc_col*local_size + loc_row] = A[row*K + loc_col + i*local_size];
+                                    Bsub[loc_col*local_size + loc_row] = B[loc_row*N + col + i*local_size*N];
+
+                                    barrier(CLK_LOCAL_MEM_FENCE);
+                                    
+                                    for(int c = 0; c<local_size; c++){
+                                        acc += Bsub[c + loc_col*local_size] * Asub[c*local_size + loc_row];
+                                    }
+                                    barrier(CLK_LOCAL_MEM_FENCE);
                                 }
-                                C[i*N + j] = acc;
+                                C[row*N + col] = acc;
                             }
+                        
                                 """).build()
     else:
         prog = cl.Program(ctx,  """
@@ -78,10 +99,13 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
     offset_M = M + (M%DIM)
     offset_N = N + (N%DIM)
 
-    #pp.set_args(A, B, C, np.int32(M), np.int32(K), np.int32(N))
-    pp.set_args(A, B, C, np.int32(N))
-    #res = cl.enqueue_nd_range_kernel(queue, pp, [M+offset_M, N+offset_N], [DIM, DIM], None)  # queue, kernel, global dims, local dims, offset
-    res = cl.enqueue_nd_range_kernel(queue, pp, [N,N], None)
+    print(offset_M)
+    print(offset_N)
+
+    pp.set_args(A, B, C, np.int32(M), np.int32(K), np.int32(N))
+    #pp.set_args(A, B, C, np.int32(N))
+    res = cl.enqueue_nd_range_kernel(queue, pp, [offset_M, offset_N], [DIM, DIM], None)  # queue, kernel, global dims, local dims, offset
+    #res = cl.enqueue_nd_range_kernel(queue, pp, [N,N], None)
     queue.finish()
 
     
