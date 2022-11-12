@@ -47,29 +47,32 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
     if fp32:
         prog = cl.Program(ctx,  """
                             __kernel void matmul(__global float* A, __global float* B, __global float* C, int M, int K, int N){
-                                size_t row = get_global_id(0);
-                                size_t col = get_global_id(1);
+                                //size_t row = get_global_id(0);
+                                //size_t col = get_global_id(1);
 
-                                size_t loc_row = get_local_id(0);
-                                size_t loc_col = get_local_id(1);
+                                const int loc_row = get_local_id(0);
+                                const int loc_col = get_local_id(1);
 
-                                int local_size = get_local_size(1);
+                                const int local_size = get_local_size(1);
 
-                                __local float Asub[256];
-                                __local float Bsub[256];
+                                const int row = local_size*get_group_id(0) + loc_row; 
+                                const int col = local_size*get_group_id(1) + loc_col; 
+
+
+                                __local float Asub[16][16];
+                                __local float Bsub[16][16];
 
                                 float acc = 0.0f;
-
                                 const short numTiles = K/local_size;
     
                                 for(int i = 0; i<numTiles; i++){
-                                    Asub[loc_col*local_size + loc_row] = A[row*K + loc_col + i*local_size];
-                                    Bsub[loc_col*local_size + loc_row] = B[loc_row*N + col + i*local_size*N];
+                                    Asub[loc_col][loc_row] = A[row*K + loc_col + i*local_size];
+                                    Bsub[loc_col][loc_row] = B[loc_row*N + col + i*local_size*N];
 
                                     barrier(CLK_LOCAL_MEM_FENCE);
                                     
                                     for(int c = 0; c<local_size; c++){
-                                        acc += Bsub[c + loc_col*local_size] * Asub[c*local_size + loc_row];
+                                        acc += Bsub[loc_col][c] * Asub[c][loc_row];
                                     }
                                     barrier(CLK_LOCAL_MEM_FENCE);
                                 }
