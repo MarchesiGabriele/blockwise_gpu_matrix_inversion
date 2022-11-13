@@ -9,13 +9,13 @@ import os
 
 #os.environ['OMP_NUM_THREADS'] = '1'
 
-N = 2048 
+N = 4096 
 
 N1 = N
 N2 = N
 
 FP32 = True 
-#np.random.seed(0)
+np.random.seed(0)
 
 # TEST OPENCL MATMUL 
 def test_mat_mul():
@@ -37,6 +37,7 @@ def test_mat_mul():
     end = time.monotonic()
     print(f"Tempo Numpy: {end-start}s")
     print(f"Numpy GFLOPS: {(N1*N2*2*N)/((end-start)*1e9)} GFLOPS")
+    
     
     #opencl
     ctx = cl.create_some_context()

@@ -13,3 +13,17 @@ We will be focusing on FP32 since it is where GPU's shine.
 We might switch to FP64 if the error starts to add up during the recursion process.
 
 
+matmul results
+https://1drv.ms/x/s!AoEhz_j--clChxYHudQoL2wH6p07?e=laQzH0
+
+
+
+##TODO: 
+- Transpose B ? to have coalesced reads 
+- Add support for matrices where N is not a multiple of DIM
+- Add support for non square matrices
+- use float4 
+- assign more work to each thread ?? 
+
+
+
