@@ -9,7 +9,7 @@ import os
 
 #os.environ['OMP_NUM_THREADS'] = '1'
 
-N = 2048 
+N = 4096 
 
 N1 = N
 N2 = N

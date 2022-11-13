@@ -39,25 +39,21 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
     # NB: max local mem size: 65536 byte (for each workgroup) == 90 FP64 values
     # M = altezza matrice A, N = larghezza matrice B, K = larghezza matrice A = altezza matrice B
 
-    # 2048x2048 benchmarks
-    # BASIC = 100-110 GFLOPS
-    # SQUARE TILING N MULTIPLE OF DIM =  157 GFLOPS
-    # SQUARE TILING =  
-    # RECTANGLE TILING = 
+    # 2048x2048 benchmarks (with 4096 and bigger, with just TILING openCL is 2x faster than NUMPY)
+    # BASIC = 100-110 GFLOPS, 0.156s
+    # SQUARE MATRIX TILING N MULTIPLE OF DIM =  157-182 GFLOPS, 0.094s
+    # SQUARE MATRIX TILING =  
+    # RECTANGLE MATRIX TILING = 
     if fp32:
         prog = cl.Program(ctx,  """
                             __kernel void matmul(__global float* A, __global float* B, __global float* C, int M, int K, int N){
-                                //size_t row = get_global_id(0);
-                                //size_t col = get_global_id(1);
-
-                                const int loc_row = get_local_id(0);
-                                const int loc_col = get_local_id(1);
+                                const int loc_row = get_local_id(1);
+                                const int loc_col = get_local_id(0);
 
                                 const int local_size = get_local_size(1);
 
-                                const int row = local_size*get_group_id(0) + loc_row; 
-                                const int col = local_size*get_group_id(1) + loc_col; 
-
+                                const int row = get_local_size(1)*get_group_id(1) + loc_row; 
+                                const int col = get_local_size(0)*get_group_id(0) + loc_col; 
 
                                 __local float Asub[16][16];
                                 __local float Bsub[16][16];
@@ -65,14 +61,25 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
                                 float acc = 0.0f;
                                 const short numTiles = K/local_size;
     
+                                /*
+                                Asub:
+                                i*local_size = indica a quale tile ci troviamo.
+                                row*K = indica la riga della matrice A su cui mi trovo.
+                                loc_col = scorro orizzontalmente la matrice A, DIM elementi alla volta. 
+
+                                Bsub: 
+                                col = indica la colonna della matrice B su cui ci troviamo attualmente
+                                loc_row*N = indica la riga della matrice B su cui ci troviamo
+                                i*local_size*N = indica a quale tile mi trovo
+                                */
                                 for(int i = 0; i<numTiles; i++){
-                                    Asub[loc_col][loc_row] = A[row*K + loc_col + i*local_size];
-                                    Bsub[loc_col][loc_row] = B[loc_row*N + col + i*local_size*N];
+                                    Asub[loc_row][loc_col] = A[row*K + loc_col + i*local_size];
+                                    Bsub[loc_row][loc_col] = B[loc_row*N + col + i*local_size*N];
 
                                     barrier(CLK_LOCAL_MEM_FENCE);
                                     
                                     for(int c = 0; c<local_size; c++){
-                                        acc += Bsub[loc_col][c] * Asub[c][loc_row];
+                                        acc += Asub[loc_row][c]*Bsub[c][loc_col];
                                     }
                                     barrier(CLK_LOCAL_MEM_FENCE);
                                 }
