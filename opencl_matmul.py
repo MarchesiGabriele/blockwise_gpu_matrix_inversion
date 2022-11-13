@@ -44,6 +44,8 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
     # SQUARE MATRIX TILING N MULTIPLE OF DIM =  157-182 GFLOPS, 0.094s
     # SQUARE MATRIX TILING =  
     # RECTANGLE MATRIX TILING = 
+
+    #TODO: fare la transposta della matrice globale B
     if fp32:
         prog = cl.Program(ctx,  """
                             __kernel void matmul(__global float* A, __global float* B, __global float* C, int M, int K, int N){
@@ -109,15 +111,17 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
     offset_M = M + (M%DIM)
     offset_N = N + (N%DIM)
 
-    print(offset_M)
-    print(offset_N)
+    #print(offset_M)
+    #print(offset_N)
 
     pp.set_args(A, B, C, np.int32(M), np.int32(K), np.int32(N))
-    #pp.set_args(A, B, C, np.int32(N))
+    st = time.monotonic() 
     res = cl.enqueue_nd_range_kernel(queue, pp, [offset_M, offset_N], [DIM, DIM], None)  # queue, kernel, global dims, local dims, offset
-    #res = cl.enqueue_nd_range_kernel(queue, pp, [N,N], None)
     queue.finish()
+    end = time.monotonic() 
 
+    print(f"\nTempo Computazione: {end-st}")
+    print(f"FLOPS Computazione: {(M*K*2*N)/((end-st)*1e9)} GFLOPS")
     
     # Lettura risultato finale
     cl.enqueue_copy(queue, out_matrix, C)

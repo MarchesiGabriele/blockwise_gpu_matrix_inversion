@@ -9,7 +9,7 @@ import os
 
 #os.environ['OMP_NUM_THREADS'] = '1'
 
-N = 4096 
+N = 2048 
 
 N1 = N
 N2 = N
@@ -35,8 +35,8 @@ def test_mat_mul():
     #m0 = np.dot(A,B) 
     m0 = A@B 
     end = time.monotonic()
-    print(f"Tempo NUMPY MATMUL: {end-start}s")
-    print(f"NUMPY FLOPS: {(N1*N2*2*N)/((end-start)*1e9)} GFLOPS")
+    print(f"Tempo Numpy: {end-start}s")
+    print(f"Numpy GFLOPS: {(N1*N2*2*N)/((end-start)*1e9)} GFLOPS")
     
     #opencl
     ctx = cl.create_some_context()
@@ -48,9 +48,9 @@ def test_mat_mul():
     print()
 
     #print(m1)
-    print(f"Tempo OPENCL MATMUL: {end-start}s")
-    print(f"OPENCL FLOPS: {(N1*N2*2*N)/((end-start)*1e9)} GFLOPS")
-    print("errore medio numpy vs opencl: ", np.sum(np.subtract(m1, m0))/(N*N))
+    print(f"Tempo OpenCL: {end-start}s")
+    print(f"OpenCL GFLOPS: {(N1*N2*2*N)/((end-start)*1e9)} GFLOPS")
+    print("Errore medio Numpy vs OpenCL: ", np.sum(np.subtract(m1, m0))/(N*N))
 
     sys.exit(0)
 
