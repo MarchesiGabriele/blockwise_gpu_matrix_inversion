@@ -38,13 +38,6 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
     # Kernels Creation
     # NB: max local mem size: 65536 byte (for each workgroup) == 90 FP64 values
     # M = altezza matrice A, N = larghezza matrice B, K = larghezza matrice A = altezza matrice B
-
-    # 2048x2048 benchmarks (with 4096 and bigger, with just TILING openCL is 2x faster than NUMPY)
-    # BASIC = 100-110 GFLOPS, 0.156s
-    # SQUARE MATRIX TILING N MULTIPLE OF DIM =  157-182 GFLOPS, 0.094s
-    # SQUARE MATRIX TILING =  
-    # RECTANGLE MATRIX TILING = 
-
     #TODO: fare la transposta della matrice globale B
     if fp32:
         prog = cl.Program(ctx,  """
@@ -61,7 +54,8 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
                                 __local float Bsub[16][16];
 
                                 float acc = 0.0f;
-                                const short numTiles = K/local_size;
+
+                                const short numTiles = (short)ceil((float)K/local_size);
     
                                 /*
                                 Asub:
@@ -74,18 +68,33 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
                                 loc_row*N = indica la riga della matrice B su cui ci troviamo
                                 i*local_size*N = indica a quale tile mi trovo
                                 */
+
                                 for(int i = 0; i<numTiles; i++){
-                                    Asub[loc_row][loc_col] = A[row*K + loc_col + i*local_size];
-                                    Bsub[loc_row][loc_col] = B[loc_row*N + col + i*local_size*N];
+                                    if(loc_col+i*local_size < K && row < M){
+                                        Asub[loc_row][loc_col] = A[row*K + loc_col + i*local_size];
+                                    }else{
+                                        Asub[loc_row][loc_col] = 0.0f; 
+                                    }
+
+                                    if(i*local_size+loc_row < K && col < N){
+                                        Bsub[loc_row][loc_col] = B[loc_row*N + col + i*local_size*N];
+                                    }else{
+                                        Bsub[loc_row][loc_col] = 0.0f; 
+                                    }
 
                                     barrier(CLK_LOCAL_MEM_FENCE);
                                     
                                     for(int c = 0; c<local_size; c++){
                                         acc += Asub[loc_row][c]*Bsub[c][loc_col];
                                     }
+
                                     barrier(CLK_LOCAL_MEM_FENCE);
                                 }
-                                C[row*N + col] = acc;
+
+                                if(row < M && col < N){
+                                    C[row*N + col] = acc;
+                                }
+                                
                             }
                         
                                 """).build()
@@ -107,16 +116,22 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
         
     # Kernel Execution
     pp = prog.matmul
+    if M%DIM != 0:
+        offset_M = M + DIM - (M%DIM) 
+    else:
+        offset_M = M 
 
-    offset_M = M + (M%DIM)
-    offset_N = N + (N%DIM)
+    if N%DIM != 0:
+        offset_N = N + DIM - (N%DIM) 
+    else: 
+        offset_N = N 
 
-    #print(offset_M)
-    #print(offset_N)
+    print(offset_M)
+    print(offset_N)
 
     pp.set_args(A, B, C, np.int32(M), np.int32(K), np.int32(N))
     st = time.monotonic() 
-    res = cl.enqueue_nd_range_kernel(queue, pp, [offset_M, offset_N], [DIM, DIM], None)  # queue, kernel, global dims, local dims, offset
+    res = cl.enqueue_nd_range_kernel(queue, pp, [offset_N, offset_M], [DIM, DIM], None)  # queue, kernel, global dims, local dims, offset
     queue.finish()
     end = time.monotonic() 
 

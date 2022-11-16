@@ -9,13 +9,13 @@ import os
 
 #os.environ['OMP_NUM_THREADS'] = '1'
 
-N = 4096 
+N = 5050 
 
-N1 = N
-N2 = N
+N1 = N//4
+N2 = N//2
 
 FP32 = True 
-np.random.seed(0)
+np.random.seed(np.int64(time.monotonic()))
 
 # TEST OPENCL MATMUL 
 def test_mat_mul():

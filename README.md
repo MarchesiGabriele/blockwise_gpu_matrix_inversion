@@ -18,7 +18,7 @@ https://1drv.ms/x/s!AoEhz_j--clChxYHudQoL2wH6p07?e=laQzH0
 
 
 
-##TODO: 
+## TODO: 
 - Transpose B ? to have coalesced reads 
 - Add support for matrices where N is not a multiple of DIM
 - Add support for non square matrices
