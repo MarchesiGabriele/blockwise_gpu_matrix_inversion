@@ -17,6 +17,9 @@ matmul results
 https://1drv.ms/x/s!AoEhz_j--clChxYHudQoL2wH6p07?e=laQzH0
 
 
+# Square matrix matmul vs non-square matrix
+Since matmul for non square matrix in slower, we are going to use 2 kernels. One for square matrix and one for rectangular ones. The decision of which kernel to use is decided from the host. 
+
 
 ## TODO: 
 - Transpose B ? to have coalesced reads 
@@ -24,6 +27,9 @@ https://1drv.ms/x/s!AoEhz_j--clChxYHudQoL2wH6p07?e=laQzH0
 - Add support for non square matrices
 - use float4 
 - assign more work to each thread ?? 
+
+
+
 
 
 
