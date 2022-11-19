@@ -116,19 +116,19 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
                                         Bsub[loc_row][loc_col*WPT+3] = B[loc_row*N + col*WPT+3 + i*local_size*N];
                                     }
                                     else if(i*local_size+loc_row < K && col*WPT+2 < N){
-                                        Bsub[loc_row][loc_col*WPT] = B[loc_row*N + col + i*local_size*N];
-                                        Bsub[loc_row][loc_col*WPT+1] = B[loc_row*N + col+1 + i*local_size*N];
-                                        Bsub[loc_row][loc_col*WPT+2] = B[loc_row*N + col+2 + i*local_size*N];
+                                        Bsub[loc_row][loc_col*WPT] = B[loc_row*N + col*WPT + i*local_size*N];
+                                        Bsub[loc_row][loc_col*WPT+1] = B[loc_row*N + col*WPT+1 + i*local_size*N];
+                                        Bsub[loc_row][loc_col*WPT+2] = B[loc_row*N + col*WPT+2 + i*local_size*N];
                                         Bsub[loc_row][loc_col*WPT+3] = 0.0f; 
                                     }
                                     else if(i*local_size+loc_row < K && col*WPT+1 < N){
-                                        Bsub[loc_row][loc_col*WPT] = B[loc_row*N + col + i*local_size*N];
-                                        Bsub[loc_row][loc_col*WPT+1] = B[loc_row*N + col+1 + i*local_size*N];
+                                        Bsub[loc_row][loc_col*WPT] = B[loc_row*N + col*WPT + i*local_size*N];
+                                        Bsub[loc_row][loc_col*WPT+1] = B[loc_row*N + col*WPT+1 + i*local_size*N];
                                         Bsub[loc_row][loc_col*WPT+2] = 0.0f; 
                                         Bsub[loc_row][loc_col*WPT+3] = 0.0f; 
                                     }
                                     else if(i*local_size+loc_row < K && col*WPT < N){
-                                        Bsub[loc_row][loc_col*WPT] = B[loc_row*N + col + i*local_size*N];
+                                        Bsub[loc_row][loc_col*WPT] = B[loc_row*N + col*WPT + i*local_size*N];
                                         Bsub[loc_row][loc_col*WPT+1] = 0.0f;  
                                         Bsub[loc_row][loc_col*WPT+2] = 0.0f; 
                                         Bsub[loc_row][loc_col*WPT+3] = 0.0f; 
@@ -160,16 +160,16 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
                                     C[row*N + col*WPT+2] = acc[2];
                                     C[row*N + col*WPT+3] = acc[3];
                                 }
-                                else if(row < M && col*WPT+3 < N){
+                                else if(row < M && col*WPT+2 < N){
                                     C[row*N + col*WPT] = acc[0];
                                     C[row*N + col*WPT+1] = acc[1];
                                     C[row*N + col*WPT+2] = acc[2];
                                 }
-                                else if(row < M && col*WPT+3 < N){
+                                else if(row < M && col*WPT+1 < N){
                                     C[row*N + col*WPT] = acc[0];
                                     C[row*N + col*WPT+1] = acc[1];
                                 }
-                                else if(row < M && col*WPT+3 < N){
+                                else if(row < M && col*WPT < N){
                                     C[row*N + col*WPT] = acc[0];
                                 }
                             }
