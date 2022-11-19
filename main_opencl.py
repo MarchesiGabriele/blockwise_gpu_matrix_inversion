@@ -8,7 +8,7 @@ import os
 
 #os.environ['OMP_NUM_THREADS'] = '1'
 
-N = 2048 
+N = 8192 
 
 N1 = N//4
 N2 = N//2

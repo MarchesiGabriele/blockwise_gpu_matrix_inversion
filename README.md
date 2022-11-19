@@ -25,6 +25,7 @@ Since matmul for non square matrix in slower, we are going to use 2 kernels. One
 - Transpose B ? to have coalesced reads 
 - use float4 
 - assign more work to each thread ?? 
+- usare image_2d  al posto delle matrici ??
 
 
 

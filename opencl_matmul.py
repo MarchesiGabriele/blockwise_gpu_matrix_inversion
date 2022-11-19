@@ -3,6 +3,7 @@ import numpy as np
 import os
 import warnings
 from time import perf_counter as pt 
+import math
 
 os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
 os.environ['PYOPENCL_CTX'] = '0' 
@@ -41,6 +42,8 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
     #TODO: fare la transposta della matrice globale B
     if fp32:
         prog = cl.Program(ctx,  """
+
+                            #define WPT 4
                             __kernel void matmul(__global float* A, __global float* B, __global float* C, int M, int K, int N){
                                 const int loc_row = get_local_id(1);
                                 const int loc_col = get_local_id(0);
@@ -53,7 +56,10 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
                                 __local float Asub[16][16];
                                 __local float Bsub[16][16];
 
-                                float acc = 0.0f;
+                                float acc[WPT];
+                                for (int w=0; w<WPT; w++) {
+                                    acc[w] = 0.0f;
+                                }
 
                                 const short numTiles = (short)ceil((float)K/local_size);
     
@@ -70,31 +76,102 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
                                 */
 
                                 for(int i = 0; i<numTiles; i++){
-                                    if(loc_col+i*local_size < K && row < M){
-                                        Asub[loc_row][loc_col] = A[row*K + loc_col + i*local_size];
-                                    }else{
-                                        Asub[loc_row][loc_col] = 0.0f; 
+                                    if(loc_col*WPT+3+i*local_size < K && row < M){
+                                        Asub[loc_row][loc_col*WPT] = A[row*K + loc_col*WPT + i*local_size];
+                                        Asub[loc_row][loc_col*WPT+1] = A[row*K + loc_col*WPT +1 + i*local_size];
+                                        Asub[loc_row][loc_col*WPT+2] = A[row*K + loc_col*WPT +2 + i*local_size];
+                                        Asub[loc_row][loc_col*WPT+3] = A[row*K + loc_col*WPT +3 + i*local_size];
+                                    }
+                                    else if(loc_col*WPT+2+i*local_size < K && row < M){
+                                        Asub[loc_row][loc_col*WPT] = A[row*K + loc_col*WPT + i*local_size];
+                                        Asub[loc_row][loc_col*WPT+1] = A[row*K + loc_col*WPT +1 + i*local_size];
+                                        Asub[loc_row][loc_col*WPT+2] = A[row*K + loc_col*WPT +2 + i*local_size];
+                                        Asub[loc_row][loc_col*WPT+3] = 0.0f; 
+                                    }
+                                    else if(loc_col*WPT+1+i*local_size < K && row < M){
+                                        Asub[loc_row][loc_col*WPT] = A[row*K + loc_col*WPT + i*local_size];
+                                        Asub[loc_row][loc_col*WPT+1] = A[row*K + loc_col*WPT +1 + i*local_size];
+                                        Asub[loc_row][loc_col*WPT+2] = 0.0f; 
+                                        Asub[loc_row][loc_col*WPT+3] = 0.0f; 
+                                     
+                                    }
+                                    else if(loc_col*WPT+i*local_size < K && row < M){
+                                        Asub[loc_row][loc_col*WPT] = A[row*K + loc_col*WPT + i*local_size];
+                                        Asub[loc_row][loc_col*WPT+1] = 0.0f; 
+                                        Asub[loc_row][loc_col*WPT+2] = 0.0f; 
+                                        Asub[loc_row][loc_col*WPT+3] = 0.0f; 
+ 
+                                    }
+                                    else{
+                                        Asub[loc_row][loc_col*WPT] = 0.0f; 
+                                        Asub[loc_row][loc_col*WPT+1] = 0.0f; 
+                                        Asub[loc_row][loc_col*WPT+2] = 0.0f; 
+                                        Asub[loc_row][loc_col*WPT+3] = 0.0f; 
                                     }
 
-                                    if(i*local_size+loc_row < K && col < N){
-                                        Bsub[loc_row][loc_col] = B[loc_row*N + col + i*local_size*N];
-                                    }else{
-                                        Bsub[loc_row][loc_col] = 0.0f; 
+                                    if(i*local_size+loc_row < K && col*WPT+3 < N){
+                                        Bsub[loc_row][loc_col*WPT] = B[loc_row*N + col*WPT + i*local_size*N];
+                                        Bsub[loc_row][loc_col*WPT+1] = B[loc_row*N + col*WPT+1 + i*local_size*N];
+                                        Bsub[loc_row][loc_col*WPT+2] = B[loc_row*N + col*WPT+2 + i*local_size*N];
+                                        Bsub[loc_row][loc_col*WPT+3] = B[loc_row*N + col*WPT+3 + i*local_size*N];
+                                    }
+                                    else if(i*local_size+loc_row < K && col*WPT+2 < N){
+                                        Bsub[loc_row][loc_col*WPT] = B[loc_row*N + col + i*local_size*N];
+                                        Bsub[loc_row][loc_col*WPT+1] = B[loc_row*N + col+1 + i*local_size*N];
+                                        Bsub[loc_row][loc_col*WPT+2] = B[loc_row*N + col+2 + i*local_size*N];
+                                        Bsub[loc_row][loc_col*WPT+3] = 0.0f; 
+                                    }
+                                    else if(i*local_size+loc_row < K && col*WPT+1 < N){
+                                        Bsub[loc_row][loc_col*WPT] = B[loc_row*N + col + i*local_size*N];
+                                        Bsub[loc_row][loc_col*WPT+1] = B[loc_row*N + col+1 + i*local_size*N];
+                                        Bsub[loc_row][loc_col*WPT+2] = 0.0f; 
+                                        Bsub[loc_row][loc_col*WPT+3] = 0.0f; 
+                                    }
+                                    else if(i*local_size+loc_row < K && col*WPT < N){
+                                        Bsub[loc_row][loc_col*WPT] = B[loc_row*N + col + i*local_size*N];
+                                        Bsub[loc_row][loc_col*WPT+1] = 0.0f;  
+                                        Bsub[loc_row][loc_col*WPT+2] = 0.0f; 
+                                        Bsub[loc_row][loc_col*WPT+3] = 0.0f; 
+                                    }
+                                    else{
+                                        Bsub[loc_row][loc_col*WPT] = 0.0f; 
+                                        Bsub[loc_row][loc_col*WPT+1] = 0.0f;  
+                                        Bsub[loc_row][loc_col*WPT+2] = 0.0f; 
+                                        Bsub[loc_row][loc_col*WPT+3] = 0.0f; 
                                     }
 
                                     barrier(CLK_LOCAL_MEM_FENCE);
                                     
                                     for(int c = 0; c<local_size; c++){
-                                        acc += Asub[loc_row][c]*Bsub[c][loc_col];
+                                        for(int Tc = 0; c<local_size; c++){
+                                        acc[0] += Asub[loc_row][c]*Bsub[c][loc_col*WPT];
+                                        acc[1] += Asub[loc_row][c]*Bsub[c][loc_col*WPT+1];
+                                        acc[2] += Asub[loc_row][c]*Bsub[c][loc_col*WPT+2];
+                                        acc[3] += Asub[loc_row][c]*Bsub[c][loc_col*WPT+3];
+                                        }
                                     }
 
                                     barrier(CLK_LOCAL_MEM_FENCE);
                                 }
 
-                                if(row < M && col < N){
-                                    C[row*N + col] = acc;
+                                if(row < M && col*WPT+3 < N){
+                                    C[row*N + col*WPT] = acc[0];
+                                    C[row*N + col*WPT+1] = acc[1];
+                                    C[row*N + col*WPT+2] = acc[2];
+                                    C[row*N + col*WPT+3] = acc[3];
                                 }
-                                
+                                else if(row < M && col*WPT+3 < N){
+                                    C[row*N + col*WPT] = acc[0];
+                                    C[row*N + col*WPT+1] = acc[1];
+                                    C[row*N + col*WPT+2] = acc[2];
+                                }
+                                else if(row < M && col*WPT+3 < N){
+                                    C[row*N + col*WPT] = acc[0];
+                                    C[row*N + col*WPT+1] = acc[1];
+                                }
+                                else if(row < M && col*WPT+3 < N){
+                                    C[row*N + col*WPT] = acc[0];
+                                }
                             }
                         
                                 """).build()
@@ -131,7 +208,8 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
 
     pp.set_args(A, B, C, np.int32(M), np.int32(K), np.int32(N))
     st = pt() 
-    res = cl.enqueue_nd_range_kernel(queue, pp, [offset_N, offset_M], [DIM, DIM], None)  # queue, kernel, global dims, local dims, offset
+    print(math.ceil(offset_N/4))
+    res = cl.enqueue_nd_range_kernel(queue, pp, [np.int32(math.ceil(offset_N/4)), offset_M], [np.int32(DIM/4), DIM], None)  # queue, kernel, global dims, local dims, offset
     queue.finish()
     end = pt() 
 
