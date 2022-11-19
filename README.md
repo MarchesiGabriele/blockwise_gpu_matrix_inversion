@@ -23,8 +23,6 @@ Since matmul for non square matrix in slower, we are going to use 2 kernels. One
 
 ## TODO: 
 - Transpose B ? to have coalesced reads 
-- Add support for matrices where N is not a multiple of DIM
-- Add support for non square matrices
 - use float4 
 - assign more work to each thread ?? 
 

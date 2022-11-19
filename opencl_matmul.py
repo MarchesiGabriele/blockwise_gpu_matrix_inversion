@@ -2,7 +2,7 @@ import pyopencl as cl
 import numpy as np
 import os
 import warnings
-import time
+from time import perf_counter as pt 
 
 os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
 os.environ['PYOPENCL_CTX'] = '0' 
@@ -20,13 +20,13 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
     #queue = cl.CommandQueue(ctx)
 
     # Buffers
-    start = time.monotonic()
+    start = pt()
     if fp32: 
         out_matrix = np.random.rand(M,N).astype(np.float32)
 
     else:
         out_matrix = np.random.rand(M,N)
-    end = time.monotonic()
+    end = pt()
 
     #print(f"Tempo creazione matrice: {end-start}")
 
@@ -130,10 +130,11 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
     print(offset_N)
 
     pp.set_args(A, B, C, np.int32(M), np.int32(K), np.int32(N))
-    st = time.monotonic() 
+    st = pt() 
     res = cl.enqueue_nd_range_kernel(queue, pp, [offset_N, offset_M], [DIM, DIM], None)  # queue, kernel, global dims, local dims, offset
     queue.finish()
-    end = time.monotonic() 
+    end = pt() 
+
 
     print(f"\nTempo Computazione: {end-st}")
     print(f"FLOPS Computazione: {(M*K*2*N)/((end-st)*1e9)} GFLOPS")
@@ -143,4 +144,5 @@ def matmul(matrix1, matrix2, M, K, N, fp32, ctx, queue):
     queue.finish()
 
     return out_matrix 
+
 
