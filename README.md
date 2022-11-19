@@ -1,5 +1,5 @@
 ## GOAL 
-- Beat Numpy and Matlab in matrix iversion.
+- Beat Numpy and Matlab (CPU) in matrix iversion.
 - Write guide to be able to use this inside matlab. 
 
 
@@ -21,11 +21,13 @@ https://1drv.ms/x/s!AoEhz_j--clChxYHudQoL2wH6p07?e=laQzH0
 Since matmul for non square matrix in slower, we are going to use 2 kernels. One for square matrix and one for rectangular ones. The decision of which kernel to use is decided from the host. 
 
 
-## TODO: 
+# TODO: 
+- Assing 8 values to each thread, using for loops instead of many else if's
+- Utilize more local mem, keep 16 for both local dims + each thread doing more work 
+
 - Transpose B ? to have coalesced reads 
 - use float4 
-- assign more work to each thread ?? 
-- usare image_2d  al posto delle matrici ??
+- use image_2d instead of matrices ??
 
 
 
