@@ -8,12 +8,17 @@ import os
 
 #os.environ['OMP_NUM_THREADS'] = '1'
 
-N =  4096 
-
-N1 = N//4
-N2 = N//2
-
+N = 2048 
+REC = True
 FP32 = True 
+
+if REC: 
+    N1 = N//2
+    N2 = N//4
+else:
+    N1 = N
+    N2 = N
+
 np.random.seed(np.int64(pt()))
 
 # TEST OPENCL MATMUL 

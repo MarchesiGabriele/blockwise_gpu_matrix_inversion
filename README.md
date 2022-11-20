@@ -22,7 +22,6 @@ Since matmul for non square matrix in slower, we are going to use 2 kernels. One
 
 
 # TODO: 
-- Assing 8 values to each thread, using for loops instead of many else if's
 - Utilize more local mem, keep 16 for both local dims + each thread doing more work 
 
 - Transpose B ? to have coalesced reads 
