@@ -29,8 +29,11 @@ ops = N^3 * 2
 ####### MAX REQUIRED BANDWIDTH #######
 max bandwidth required for 4096x4096 matrix mul
 
+matrix_size * 4byte_data * 3matrix_involved / time_with_max_compute
 
-4096^3 / 
+best_time = 4096^3 * 2 / 7.160.000.000.000 = 19ms
+
+4096^2 * 4 * 3 / 0.019 = 10 GB/0.019 = 10 GB/s
 
 
 
