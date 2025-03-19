@@ -21,6 +21,20 @@ BANDWIDTH = 128*14/8 = 224 GB/s
 
 
 ####### OPS FOR MATMULL #######
+given square NxN matrix
+
+ops = N^3 * 2
+
+
+####### MAX REQUIRED BANDWIDTH #######
+max bandwidth required for 4096x4096 matrix mul
+
+
+4096^3 / 
+
+
+
+
 
 
 
