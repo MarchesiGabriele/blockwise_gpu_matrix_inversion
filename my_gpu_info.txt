@@ -1,0 +1,37 @@
+####### THEORETICAL FLOPS RX 6700S 8GB #######
+16 workgroups
+28 compute units
+2 simd per compute unit
+one 32 2 way value unit per simd (two operations per cycle)
+
+max clock 2435 MHz
+
+# freq * simd_count * operations_per_simd_per_clock 
+
+FLOPS = 2000*10e6 * 28*2 * 32*2 =  7.16 TFLOPS
+
+
+####### THEORETICAL BANDWIDTH RX 6700S 8GB ######
+128 bit memory bus
+14 Gbps effective
+
+BANDWIDTH = 128*14/8 = 224 GB/s
+
+
+
+
+####### OPS FOR MATMULL #######
+
+
+
+
+
+
+
+
+
+
+
+
+
+
